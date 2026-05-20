@@ -16,10 +16,13 @@ from PyQt6.QtGui import (
     QPen,
 )
 from PyQt6.QtWidgets import (
+    QDialog,
     QGraphicsObject,
     QGraphicsScene,
     QGraphicsView,
+    QHBoxLayout,
     QLabel,
+    QPushButton,
     QVBoxLayout,
     QWidget,
 )
@@ -64,6 +67,14 @@ _TERMINAL_H = 132
 _LEVEL_DY = 270
 _BRANCH_DX = 360
 _PLAY_TICK_MS = 40
+_FX_TICK_MS = 60
+_ANIM_PHASE = 0.0
+
+_NEON_CYAN = "#37f8ff"
+_NEON_BLUE = "#58a6ff"
+_NEON_VIOLET = "#a371f7"
+_NEON_AMBER = "#ffcf33"
+_GLASS_BG = "#09111d"
 
 
 def _font_ui(pt: int, *, bold: bool = False, mono: bool = False) -> QFont:
@@ -77,6 +88,22 @@ def _font_ui(pt: int, *, bold: bool = False, mono: bool = False) -> QFont:
 def _answer_color(answer: str) -> str:
     base = str(answer).split("（", 1)[0]
     return _ANSWER_COLOR.get(base, T.ACCENT_PRIMARY)
+
+
+def _draw_corner_brackets(painter: QPainter, rect: QRectF, color: QColor) -> None:
+    """Draw HUD-style card corner brackets."""
+    painter.setPen(QPen(color, 2))
+    l = 18
+    x0, x1 = rect.left(), rect.right()
+    y0, y1 = rect.top(), rect.bottom()
+    painter.drawLine(QPointF(x0 + 8, y0), QPointF(x0 + 8 + l, y0))
+    painter.drawLine(QPointF(x0, y0 + 8), QPointF(x0, y0 + 8 + l))
+    painter.drawLine(QPointF(x1 - 8 - l, y0), QPointF(x1 - 8, y0))
+    painter.drawLine(QPointF(x1, y0 + 8), QPointF(x1, y0 + 8 + l))
+    painter.drawLine(QPointF(x0 + 8, y1), QPointF(x0 + 8 + l, y1))
+    painter.drawLine(QPointF(x0, y1 - 8 - l), QPointF(x0, y1 - 8))
+    painter.drawLine(QPointF(x1 - 8 - l, y1), QPointF(x1 - 8, y1))
+    painter.drawLine(QPointF(x1, y1 - 8 - l), QPointF(x1, y1 - 8))
 
 
 def _taken_branch_side(item: dict[str, Any]) -> Literal["left", "right", "down"]:
@@ -106,11 +133,29 @@ class _Placed:
 
 class _FlowScene(QGraphicsScene):
     def drawBackground(self, painter: QPainter, rect: QRectF) -> None:  # noqa: N802
-        painter.fillRect(rect, QColor("#05070b"))
+        global _ANIM_PHASE
+        grad = QLinearGradient(rect.topLeft(), rect.bottomRight())
+        grad.setColorAt(0, QColor("#020711"))
+        grad.setColorAt(0.48, QColor("#07111f"))
+        grad.setColorAt(1, QColor("#030409"))
+        painter.fillRect(rect, QBrush(grad))
+
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        center = rect.center()
+        halo = QLinearGradient(center.x() - rect.width() * 0.45, center.y(), center.x() + rect.width() * 0.45, center.y())
+        c0 = QColor(_NEON_BLUE)
+        c0.setAlpha(0)
+        c1 = QColor(_NEON_CYAN)
+        c1.setAlpha(24)
+        halo.setColorAt(0, c0)
+        halo.setColorAt(0.5, c1)
+        halo.setColorAt(1, c0)
+        painter.fillRect(rect, QBrush(halo))
+
         step = 32
         left = int(rect.left()) - (int(rect.left()) % step)
         top = int(rect.top()) - (int(rect.top()) % step)
-        painter.setPen(QPen(QColor(28, 38, 52, 70)))
+        painter.setPen(QPen(QColor(34, 231, 255, 36)))
         x = left
         while x < rect.right():
             painter.drawLine(int(x), int(rect.top()), int(x), int(rect.bottom()))
@@ -119,6 +164,30 @@ class _FlowScene(QGraphicsScene):
         while y < rect.bottom():
             painter.drawLine(int(rect.left()), int(y), int(rect.right()), int(y))
             y += step
+
+        major = step * 4
+        left = int(rect.left()) - (int(rect.left()) % major)
+        top = int(rect.top()) - (int(rect.top()) % major)
+        painter.setPen(QPen(QColor(88, 166, 255, 58)))
+        x = left
+        while x < rect.right():
+            painter.drawLine(int(x), int(rect.top()), int(x), int(rect.bottom()))
+            x += major
+        y = top
+        while y < rect.bottom():
+            painter.drawLine(int(rect.left()), int(y), int(rect.right()), int(y))
+            y += major
+
+        scan_y = rect.top() + ((rect.height() + 220) * ((_ANIM_PHASE * 0.18) % 1.0)) - 110
+        scan = QLinearGradient(rect.left(), scan_y - 34, rect.left(), scan_y + 34)
+        transparent = QColor(_NEON_CYAN)
+        transparent.setAlpha(0)
+        bright = QColor(_NEON_CYAN)
+        bright.setAlpha(34)
+        scan.setColorAt(0, transparent)
+        scan.setColorAt(0.5, bright)
+        scan.setColorAt(1, transparent)
+        painter.fillRect(QRectF(rect.left(), scan_y - 34, rect.width(), 68), QBrush(scan))
 
 
 class _BranchEdge(QGraphicsObject):
@@ -143,13 +212,15 @@ class _BranchEdge(QGraphicsObject):
         return QRectF(self._p0, self._p1).normalized().adjusted(-40, -24, 40, 24)
 
     def paint(self, painter: QPainter, _option: Any, _widget: Any = None) -> None:
+        global _ANIM_PHASE
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        col = QColor(T.ACCENT_PRIMARY if self._active else T.TEXT_MUTED)
+        col = QColor(_NEON_CYAN if self._active else T.TEXT_MUTED)
         if not self._active:
             col.setAlpha(90)
-        glow = QPen(QColor(col.red(), col.green(), col.blue(), 50 if self._active else 25))
-        glow.setWidth(7 if self._active else 4)
         path = self._curve()
+
+        glow = QPen(QColor(col.red(), col.green(), col.blue(), 72 if self._active else 25))
+        glow.setWidth(11 if self._active else 4)
         painter.setPen(glow)
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawPath(path)
@@ -159,6 +230,17 @@ class _BranchEdge(QGraphicsObject):
             pen.setStyle(Qt.PenStyle.DotLine)
         painter.setPen(pen)
         painter.drawPath(path)
+
+        if self._active:
+            painter.setPen(Qt.PenStyle.NoPen)
+            for i in range(3):
+                pct = (_ANIM_PHASE * 0.42 + i * 0.33) % 1.0
+                pt = path.pointAtPercent(pct)
+                dot = QColor(_NEON_CYAN)
+                dot.setAlpha(210 - i * 45)
+                painter.setBrush(QBrush(dot))
+                painter.drawEllipse(pt, 5.5 - i, 5.5 - i)
+
         # Arrow
         painter.setBrush(QBrush(col))
         dx = self._p1.x() - self._p0.x()
@@ -227,11 +309,13 @@ class _PhaseBandItem(QGraphicsObject):
 
     def paint(self, painter: QPainter, _option: Any, _widget: Any = None) -> None:
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        pen = QPen(QColor(T.ACCENT_REASONING))
+        pen = QPen(QColor(_NEON_VIOLET))
         painter.setPen(pen)
         painter.drawLine(QPointF(-260, 0), QPointF(-70, 0))
         painter.drawLine(QPointF(70, 0), QPointF(260, 0))
         painter.setFont(_font_ui(11, bold=True))
+        painter.setBrush(QBrush(QColor(163, 113, 247, 28)))
+        painter.drawRoundedRect(QRectF(-86, -15, 172, 30), 10, 10)
         painter.drawText(QRectF(-70, -12, 140, 24), int(Qt.AlignmentFlag.AlignCenter), self._title)
 
 
@@ -289,17 +373,29 @@ class _DecisionNode(QGraphicsObject):
             painter.drawRoundedRect(rect.adjusted(-6, -6, 6, 6), 22, 22)
 
         grad = QLinearGradient(0, 0, 0, h)
-        grad.setColorAt(0, QColor("#1f2c46"))
-        grad.setColorAt(0.55, QColor("#142035"))
-        grad.setColorAt(1, QColor("#0a0f18"))
+        grad.setColorAt(0, QColor("#172943"))
+        grad.setColorAt(0.5, QColor(_GLASS_BG))
+        grad.setColorAt(1, QColor("#030711"))
         painter.setBrush(QBrush(grad))
-        painter.setPen(QPen(QColor(accent.red(), accent.green(), accent.blue(), 190), 2))
+        painter.setPen(QPen(QColor(accent.red(), accent.green(), accent.blue(), 175), 2))
         painter.drawRoundedRect(rect, 18, 18)
+        _draw_corner_brackets(
+            painter,
+            rect.adjusted(5, 5, -5, -5),
+            QColor(accent.red(), accent.green(), accent.blue(), 180),
+        )
 
         # A status stripe makes the answer visible even when zoomed out.
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QBrush(accent))
-        painter.drawRoundedRect(QRectF(-w / 2, 0, 10, h), 5, 5)
+        stripe = QLinearGradient(-w / 2, 0, -w / 2, h)
+        bright = QColor(accent)
+        dim = QColor(accent)
+        dim.setAlpha(30)
+        stripe.setColorAt(0, bright)
+        stripe.setColorAt(0.55, dim)
+        stripe.setColorAt(1, bright)
+        painter.setBrush(QBrush(stripe))
+        painter.drawRoundedRect(QRectF(-w / 2, 0, 12, h), 6, 6)
 
         pad_x = 24
         inner_w = w - pad_x * 2
@@ -313,7 +409,7 @@ class _DecisionNode(QGraphicsObject):
         )
 
         painter.setFont(_font_ui(12, mono=True, bold=True))
-        painter.setPen(QPen(QColor(T.ACCENT_PRIMARY)))
+        painter.setPen(QPen(QColor(_NEON_CYAN)))
         painter.drawText(
             QRectF(w / 2 - pad_x - 170, 14, 170, 24),
             int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter),
@@ -357,6 +453,12 @@ class _DecisionNode(QGraphicsObject):
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QBrush(QColor(accent.red(), accent.green(), accent.blue(), 34)))
         painter.drawRoundedRect(footer_rect, 10, 10)
+        painter.setBrush(QBrush(QColor(55, 248, 255, 26)))
+        painter.drawRoundedRect(
+            QRectF(w / 2 - pad_x - 116, h - 44, 116, 30),
+            10,
+            10,
+        )
         painter.setFont(_font_ui(14, bold=True))
         painter.setPen(QPen(accent))
         painter.save()
@@ -367,6 +469,13 @@ class _DecisionNode(QGraphicsObject):
             f"结论：{ans}",
         )
         painter.restore()
+        painter.setFont(_font_ui(10, mono=True, bold=True))
+        painter.setPen(QPen(QColor(_NEON_CYAN)))
+        painter.drawText(
+            QRectF(w / 2 - pad_x - 108, h - 44, 96, 30),
+            int(Qt.AlignmentFlag.AlignCenter),
+            "AI NODE",
+        )
 
     def port_bottom(self) -> QPointF:
         return self.scenePos() + QPointF(0, _NODE_H)
@@ -449,34 +558,44 @@ class _TerminalNode(QGraphicsObject):
         return QRectF(-_TERMINAL_W / 2 - 8, -8, _TERMINAL_W + 16, _TERMINAL_H + 16)
 
     def paint(self, painter: QPainter, _option: Any, _widget: Any = None) -> None:
+        global _ANIM_PHASE
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h = _TERMINAL_W, _TERMINAL_H
         rect = QRectF(-w / 2, 0, w, h)
-        glow = QPen(QColor(self._color.red(), self._color.green(), self._color.blue(), 100))
-        glow.setWidth(10)
+        pulse = int(70 + 35 * (0.5 + 0.5 * math.sin(_ANIM_PHASE * 2.7)))
+        glow = QPen(QColor(self._color.red(), self._color.green(), self._color.blue(), pulse))
+        glow.setWidth(16)
         painter.setPen(glow)
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.drawRoundedRect(rect.adjusted(-5, -5, 5, 5), 16, 16)
+        painter.drawRoundedRect(rect.adjusted(-8, -8, 8, 8), 20, 20)
+        ring = QColor(self._color)
+        ring.setAlpha(55)
+        painter.setPen(QPen(ring, 2))
+        painter.drawEllipse(QPointF(0, h / 2), w * 0.45, h * 0.74)
+        painter.drawEllipse(QPointF(0, h / 2), w * 0.32, h * 0.52)
+
         grad = QLinearGradient(-w / 2, 0, w / 2, 0)
-        grad.setColorAt(0, QColor("#1a2844"))
-        grad.setColorAt(0.5, QColor("#223358"))
-        grad.setColorAt(1, QColor("#1a2844"))
+        grad.setColorAt(0, QColor("#07111f"))
+        grad.setColorAt(0.5, QColor("#1a2844"))
+        grad.setColorAt(1, QColor("#07111f"))
         painter.setBrush(QBrush(grad))
         painter.setPen(QPen(self._color, 3))
         painter.drawRoundedRect(rect, 14, 14)
-        painter.setFont(_font_ui(12, mono=True))
+        _draw_corner_brackets(painter, rect.adjusted(5, 5, -5, -5), self._color)
+
+        painter.setFont(_font_ui(11, mono=True, bold=True))
         painter.setPen(QPen(QColor(T.TEXT_MUTED)))
         painter.drawText(
             QRectF(-w / 2, 12, w, 22),
             int(Qt.AlignmentFlag.AlignCenter),
-            f"§{self._nid}",
+            f"FINAL VERDICT  //  §{self._nid}",
         )
-        painter.setFont(_font_ui(16, bold=True))
+        painter.setFont(_font_ui(20, bold=True))
         painter.setPen(QPen(self._color))
         painter.drawText(
-            QRectF(-w / 2, 36, w, 32),
+            QRectF(-w / 2, 36, w, 34),
             int(Qt.AlignmentFlag.AlignCenter),
-            f"终点 · {self._outcome_zh}",
+            self._outcome_zh.upper(),
         )
         painter.setFont(_font_ui(12))
         painter.setPen(QPen(QColor(T.TEXT_PRIMARY)))
@@ -630,11 +749,16 @@ def _build_playback_path(placed: list[_Placed], *, total_steps: int) -> list[QPo
 class DecisionFlowVizPanel(QWidget):
     """Branched flowchart of the AI walk (yes=右 / no=左)."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, *, show_controls: bool = True) -> None:
         super().__init__(parent)
         self._settings: Any = None
+        self._show_controls = show_controls
+        self._last_trace_kw: dict[str, Any] | None = None
         self._play_timer = QTimer(self)
         self._play_timer.timeout.connect(self._on_play_tick)
+        self._fx_timer = QTimer(self)
+        self._fx_timer.timeout.connect(self._on_fx_tick)
+        self._fx_timer.start(_FX_TICK_MS)
         self._play_points: list[QPointF] = []
         self._play_index = 0
         self._play_active = False
@@ -659,6 +783,20 @@ class DecisionFlowVizPanel(QWidget):
         title.setStyleSheet(
             "font-size: 15px; font-weight: 600; letter-spacing: 0.5px;"
         )
+        self._fullscreen_btn = QPushButton("全屏推演")
+        self._fullscreen_btn.setObjectName("decisionFlowFullscreenButton")
+        self._fullscreen_btn.setStyleSheet(
+            f"color: {_NEON_CYAN}; border-color: {_NEON_CYAN}; font-weight: 600;"
+        )
+        self._fullscreen_btn.clicked.connect(self._open_fullscreen)
+
+        title_row = QHBoxLayout()
+        title_row.setContentsMargins(0, 0, 0, 0)
+        title_row.addWidget(title)
+        title_row.addStretch(1)
+        if self._show_controls:
+            title_row.addWidget(self._fullscreen_btn)
+
         sub = QLabel(
             "卡片 = 判断节点 · 左 = 否 / 右 = 是 · 亮线 = AI 实际路径\n"
             "虚线框 = 未走分支含义（二元决策树） · 拖拽平移 · Ctrl + 滚轮缩放"
@@ -667,6 +805,15 @@ class DecisionFlowVizPanel(QWidget):
         sub.setWordWrap(True)
         sub.setStyleSheet(
             f"color: {T.TEXT_SECONDARY}; font-size: 12px; line-height: 1.45;"
+        )
+
+        self._hud_label = QLabel("")
+        self._hud_label.setTextFormat(Qt.TextFormat.RichText)
+        self._hud_label.setStyleSheet(
+            f"background-color: rgba(5, 13, 24, 220);"
+            f"border: 1px solid {_NEON_CYAN}; border-radius: 8px;"
+            f"padding: 8px 10px; color: {T.TEXT_PRIMARY};"
+            f"font-family: Consolas, 'Microsoft YaHei UI'; font-size: 12px;"
         )
 
         self._play_status = QLabel("")
@@ -678,8 +825,9 @@ class DecisionFlowVizPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(6)
-        layout.addWidget(title)
+        layout.addLayout(title_row)
         layout.addWidget(sub)
+        layout.addWidget(self._hud_label)
         layout.addWidget(self._play_status)
         layout.addWidget(self._view, stretch=1)
         self.clear()
@@ -696,6 +844,11 @@ class DecisionFlowVizPanel(QWidget):
         if self._settings is None:
             return False
         return bool(getattr(self._settings.general, "decision_flow_auto_play", False))
+
+    def _on_fx_tick(self) -> None:
+        global _ANIM_PHASE
+        _ANIM_PHASE = (_ANIM_PHASE + 0.06) % 1000.0
+        self._scene.update(self._scene.sceneRect())
 
     def play_path(self) -> bool:
         """Play camera animation along the current AI path."""
@@ -780,10 +933,70 @@ class DecisionFlowVizPanel(QWidget):
             self._view.scale(z, z)
         self._view.centerOn(rect.center())
 
+    def _render_hud(
+        self,
+        *,
+        merged: list[dict[str, Any]],
+        terminal: dict[str, Any] | None,
+        gate_result: str | None = None,
+        gate_shortcircuited: bool = False,
+    ) -> None:
+        node_count = len(merged)
+        gate_count = sum(1 for x in merged if x.get("phase") == "gate")
+        decision_count = max(0, node_count - gate_count)
+        outcome = str(terminal.get("outcome", "standby")) if terminal else "standby"
+        outcome_zh = _OUTCOME_ZH.get(outcome, "待机")
+        terminal_id = str(terminal.get("node_id", "--")) if terminal else "--"
+        gate_text = gate_result or ("short" if gate_shortcircuited else "ready")
+        status_color = _OUTCOME_COLOR.get(outcome, _NEON_CYAN)
+        self._hud_label.setText(
+            "<span style='color:{cyan}; font-weight:700;'>AI TACTICAL DECISION MATRIX</span>"
+            " &nbsp; <span style='color:{muted};'>|</span> &nbsp; "
+            "GATE <span style='color:{amber};'>{gate}</span>"
+            " &nbsp; <span style='color:{muted};'>|</span> &nbsp; "
+            "NODES <span style='color:{cyan};'>{nodes:02d}</span>"
+            " &nbsp; <span style='color:{muted};'>|</span> &nbsp; "
+            "G/D <span style='color:{violet};'>{gate_count}/{decision_count}</span>"
+            " &nbsp; <span style='color:{muted};'>|</span> &nbsp; "
+            "TERMINAL <span style='color:{status};'>§{terminal_id} {outcome}</span>"
+            .format(
+                cyan=_NEON_CYAN,
+                muted=T.TEXT_MUTED,
+                amber=_NEON_AMBER,
+                violet=_NEON_VIOLET,
+                status=status_color,
+                gate=gate_text.upper(),
+                nodes=node_count,
+                gate_count=gate_count,
+                decision_count=decision_count,
+                terminal_id=terminal_id,
+                outcome=outcome_zh,
+            )
+        )
+
+    def _open_fullscreen(self) -> None:
+        if self._last_trace_kw is None:
+            self._play_status.setText("暂无可全屏推演路径，请先完成一次分析")
+            return
+        dlg = QDialog(self)
+        dlg.setWindowTitle("AI Tactical Decision Matrix — Fullscreen")
+        dlg.resize(1500, 950)
+        layout = QVBoxLayout(dlg)
+        layout.setContentsMargins(0, 0, 0, 0)
+        panel = DecisionFlowVizPanel(dlg, show_controls=False)
+        panel.bind_settings(self._settings)
+        panel.set_trace(**self._last_trace_kw)
+        layout.addWidget(panel)
+        dlg.showMaximized()
+        QTimer.singleShot(180, panel.play_path)
+        dlg.exec()
+
     def clear(self) -> None:
         self._stop_playback()
+        self._last_trace_kw = None
         self._last_placed = []
         self._scene.clear()
+        self._render_hud(merged=[], terminal=None)
         hint = _EmptyHint("等待分析…\n提交后将显示左右分支决策流程图")
         hint.setPos(-200, 60)
         self._scene.addItem(hint)
@@ -801,11 +1014,25 @@ class DecisionFlowVizPanel(QWidget):
         gate_shortcircuited: bool = False,
     ) -> bool:
         """Build flowchart; return True if there is a path to play."""
+        self._last_trace_kw = {
+            "gate_trace": gate_trace,
+            "decision_trace": decision_trace,
+            "terminal": terminal,
+            "gate_result": gate_result,
+            "gate_shortcircuited": gate_shortcircuited,
+        }
         merged = merge_traces(gate_trace, decision_trace)
         self._scene.clear()
         if not merged and not terminal:
             self.clear()
             return False
+
+        self._render_hud(
+            merged=merged,
+            terminal=terminal,
+            gate_result=gate_result,
+            gate_shortcircuited=gate_shortcircuited,
+        )
 
         placed, edge_specs, bands = _layout_branched_path(merged, terminal)
 
