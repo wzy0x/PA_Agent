@@ -1,0 +1,20 @@
+{
+  "name": "pa-agent-mcp-js",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Bun/JavaScript MCP server for PA Agent market data and Price Action analysis inputs.",
+  "scripts": {
+    "start": "bun src/server.js",
+    "check": "bun --check src/server.js",
+    "smoke": "bun scripts/smoke.js",
+    "install-skill": "bun scripts/install-skill.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "engines": {
+    "bun": ">=1.3.0"
+  }
+}

@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>合盛硅业 klinecharts K1-K5</title>
+  <style>
+    :root {
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      background: #f6f7f9;
+      color: #1f2933;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .meta {
+      margin-top: 6px;
+      color: #52606d;
+      font-size: 13px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      color: #52606d;
+      font-size: 13px;
+    }
+
+    .pill {
+      border: 1px solid #d9e2ec;
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: #fff;
+      white-space: nowrap;
+    }
+
+    #chart {
+      width: 100%;
+      height: 620px;
+      border: 1px solid #d9e2ec;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .note {
+      margin: 12px 0 0;
+      color: #52606d;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .error {
+      display: none;
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border: 1px solid #f5c2c7;
+      background: #fff1f2;
+      color: #9f1239;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>合盛硅业 603260 日线</h1>
+        <div class="meta">klinecharts 渲染；东方财富公共行情快照；K1 = 最新已收盘K线</div>
+      </div>
+      <div class="legend">
+        <span class="pill">K1 2026-07-01 收 47.19</span>
+        <span class="pill">压力 49.50 / 51.16</span>
+        <span class="pill">支撑 45.51 / 44.85</span>
+      </div>
+    </header>
+
+    <div id="load-error" class="error"></div>
+    <section id="chart" aria-label="合盛硅业K线图"></section>
+    <p class="note">
+      图上最右侧闭合K线标为 K1，往左依次是 K2、K3、K4、K5。AI 分析只应使用这些已收盘K线；
+      如果之后接入实时分时或未收盘日K，可以显示为 seq=0，但不能参与 K1/K2 编号。
+    </p>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/klinecharts@10.0.0-alpha5/dist/umd/klinecharts.min.js"></script>
+  <script>
+    const barsNewestFirst = [
+      { time: "2026-07-01", timestamp: 1782835200000, open: 48.26, high: 49.50, low: 46.89, close: 47.19, volume: 255302 },
+      { time: "2026-06-30", timestamp: 1782748800000, open: 45.79, high: 48.97, low: 45.51, close: 48.26, volume: 269271 },
+      { time: "2026-06-29", timestamp: 1782662400000, open: 47.70, high: 48.91, low: 44.85, close: 45.45, volume: 300249 },
+      { time: "2026-06-26", timestamp: 1782403200000, open: 50.20, high: 50.38, low: 46.05, close: 47.60, volume: 326909 },
+      { time: "2026-06-25", timestamp: 1782316800000, open: 48.00, high: 50.92, low: 47.37, close: 49.66, volume: 307054 },
+      { time: "2026-06-24", timestamp: 1782230400000, open: 47.50, high: 49.50, low: 47.17, close: 48.56, volume: 257712 },
+      { time: "2026-06-23", timestamp: 1782144000000, open: 49.85, high: 49.86, low: 45.88, close: 48.28, volume: 331070 },
+      { time: "2026-06-22", timestamp: 1782057600000, open: 47.84, high: 51.16, low: 46.80, close: 50.62, volume: 382689 },
+      { time: "2026-06-18", timestamp: 1781712000000, open: 48.73, high: 50.34, low: 48.19, close: 48.40, volume: 297167 },
+      { time: "2026-06-17", timestamp: 1781625600000, open: 50.16, high: 51.93, low: 48.70, close: 50.03, volume: 473258 },
+      { time: "2026-06-16", timestamp: 1781539200000, open: 46.00, high: 51.03, low: 44.23, close: 51.03, volume: 515309 },
+      { time: "2026-06-15", timestamp: 1781452800000, open: 43.50, high: 47.70, low: 41.80, close: 46.39, volume: 402440 },
+      { time: "2026-06-12", timestamp: 1781193600000, open: 41.00, high: 44.87, low: 40.99, close: 43.36, volume: 289874 },
+      { time: "2026-06-11", timestamp: 1781107200000, open: 40.24, high: 42.67, low: 39.93, close: 41.40, volume: 269666 },
+      { time: "2026-06-10", timestamp: 1781020800000, open: 38.98, high: 40.65, low: 38.80, close: 39.85, volume: 177195 },
+      { time: "2026-06-09", timestamp: 1780934400000, open: 36.45, high: 39.33, low: 35.51, close: 39.33, volume: 151481 },
+      { time: "2026-06-08", timestamp: 1780848000000, open: 36.29, high: 37.76, low: 35.39, close: 35.75, volume: 82358 },
+      { time: "2026-06-05", timestamp: 1780588800000, open: 38.31, high: 38.75, low: 37.28, close: 37.34, volume: 106423 },
+      { time: "2026-06-04", timestamp: 1780502400000, open: 36.03, high: 39.87, low: 35.62, close: 38.47, volume: 180922 },
+      { time: "2026-06-03", timestamp: 1780416000000, open: 36.15, high: 37.63, low: 35.52, close: 36.45, volume: 108177 },
+      { time: "2026-06-02", timestamp: 1780329600000, open: 37.51, high: 37.64, low: 35.85, close: 36.20, volume: 94048 },
+      { time: "2026-06-01", timestamp: 1780243200000, open: 37.70, high: 38.22, low: 37.30, close: 37.75, volume: 74002 },
+      { time: "2026-05-29", timestamp: 1779984000000, open: 39.78, high: 39.88, low: 37.87, close: 38.07, volume: 122192 },
+      { time: "2026-05-28", timestamp: 1779897600000, open: 40.05, high: 40.55, low: 38.81, close: 40.02, volume: 90508 },
+      { time: "2026-05-27", timestamp: 1779811200000, open: 40.21, high: 41.43, low: 39.74, close: 40.10, volume: 81920 },
+      { time: "2026-05-26", timestamp: 1779724800000, open: 39.50, high: 41.80, low: 38.90, close: 40.63, volume: 112243 },
+      { time: "2026-05-25", timestamp: 1779638400000, open: 40.65, high: 40.80, low: 39.48, close: 39.81, volume: 72623 },
+      { time: "2026-05-22", timestamp: 1779379200000, open: 39.99, high: 40.88, low: 39.48, close: 40.65, volume: 85193 },
+      { time: "2026-05-21", timestamp: 1779292800000, open: 42.20, high: 42.63, low: 39.69, close: 39.81, volume: 103535 },
+      { time: "2026-05-20", timestamp: 1779206400000, open: 41.41, high: 42.88, low: 41.00, close: 42.20, volume: 90216 },
+      { time: "2026-05-19", timestamp: 1779120000000, open: 41.53, high: 41.79, low: 40.42, close: 41.41, volume: 76815 },
+      { time: "2026-05-18", timestamp: 1779033600000, open: 41.90, high: 42.21, low: 41.07, close: 41.46, volume: 69737 },
+      { time: "2026-05-15", timestamp: 1778774400000, open: 43.86, high: 44.20, low: 42.10, close: 42.49, volume: 104619 },
+      { time: "2026-05-14", timestamp: 1778688000000, open: 43.24, high: 44.58, low: 43.15, close: 43.86, volume: 132233 },
+      { time: "2026-05-13", timestamp: 1778601600000, open: 42.10, high: 43.40, low: 41.88, close: 43.21, volume: 143004 },
+      { time: "2026-05-12", timestamp: 1778515200000, open: 45.25, high: 45.50, low: 44.22, close: 44.50, volume: 75337 },
+      { time: "2026-05-11", timestamp: 1778428800000, open: 44.80, high: 45.75, low: 44.63, close: 45.37, volume: 88112 },
+      { time: "2026-05-08", timestamp: 1778169600000, open: 45.00, high: 45.65, low: 44.56, close: 45.03, volume: 85846 },
+      { time: "2026-05-07", timestamp: 1778083200000, open: 46.00, high: 46.77, low: 45.17, close: 45.41, volume: 101649 },
+      { time: "2026-05-06", timestamp: 1777996800000, open: 44.57, high: 45.75, low: 44.20, close: 45.70, volume: 103803 }
+    ];
+
+    function showError(message) {
+      const error = document.getElementById("load-error");
+      error.textContent = message;
+      error.style.display = "block";
+    }
+
+    function registerOverlays(api) {
+      api.registerOverlay({
+        name: "paTextLabel",
+        totalStep: 1,
+        needDefaultPointFigure: false,
+        needDefaultXAxisFigure: false,
+        needDefaultYAxisFigure: false,
+        createPointFigures: ({ coordinates, overlay }) => {
+          const point = coordinates[0];
+          const label = overlay.extendData?.label ?? "";
+          const fill = overlay.extendData?.fill ?? "#1d4ed8";
+          const dx = overlay.extendData?.dx ?? 0;
+          const dy = overlay.extendData?.dy ?? 0;
+          const labelX = point.x + dx;
+          const labelY = point.y - 24 + dy;
+          return [
+            {
+              type: "rect",
+              attrs: { x: labelX - 18, y: labelY - 11, width: 36, height: 22 },
+              styles: { style: "fill", color: fill, borderRadius: 5 }
+            },
+            {
+              type: "text",
+              attrs: { x: labelX, y: labelY, text: label, align: "center", baseline: "middle" },
+              styles: { color: "#ffffff", size: 12, weight: "bold" }
+            },
+            {
+              type: "line",
+              attrs: { coordinates: [{ x: labelX, y: labelY + 11 }, { x: point.x, y: point.y - 1 }] },
+              styles: { color: fill, size: 1 }
+            }
+          ];
+        }
+      });
+
+      api.registerOverlay({
+        name: "paLevel",
+        totalStep: 1,
+        needDefaultPointFigure: false,
+        needDefaultXAxisFigure: false,
+        needDefaultYAxisFigure: false,
+        createPointFigures: ({ coordinates, bounding, overlay }) => {
+          const point = coordinates[0];
+          const text = overlay.extendData?.text ?? "";
+          const color = overlay.extendData?.color ?? "#2563eb";
+          return [
+            {
+              type: "line",
+              attrs: { coordinates: [{ x: 0, y: point.y }, { x: bounding.width, y: point.y }] },
+              styles: { color, size: 1, dashedValue: [4, 4] }
+            },
+            {
+              type: "text",
+              attrs: { x: bounding.width - 8, y: point.y - 7, text, align: "right", baseline: "bottom" },
+              styles: { color, size: 12, weight: "bold" }
+            }
+          ];
+        }
+      });
+    }
+
+    function mountChart() {
+      if (!window.klinecharts) {
+        showError("klinecharts 未加载。请检查网络，或后续改为 bun add klinecharts 后本地打包。");
+        return;
+      }
+
+      const chart = window.klinecharts.init("chart", {
+        styles: {
+          candle: {
+            bar: {
+              upColor: "#d64545",
+              downColor: "#168a5a",
+              noChangeColor: "#6b7280",
+              upBorderColor: "#d64545",
+              downBorderColor: "#168a5a",
+              noChangeBorderColor: "#6b7280",
+              upWickColor: "#d64545",
+              downWickColor: "#168a5a",
+              noChangeWickColor: "#6b7280"
+            }
+          },
+          grid: {
+            horizontal: { color: "#edf2f7" },
+            vertical: { color: "#edf2f7" }
+          }
+        }
+      });
+
+      registerOverlays(window.klinecharts);
+
+      const bars = [...barsNewestFirst].reverse();
+      chart.applyNewData(bars);
+
+      chart.setOffsetRightDistance(40);
+      chart.createIndicator("VOL", false);
+      chart.createIndicator("MA", false, { id: "candle_pane" });
+
+      const labelLayout = [
+        { fill: "#1d4ed8", dx: 22, dy: 38 },
+        { fill: "#334155", dx: 18, dy: 10 },
+        { fill: "#334155", dx: 8, dy: -18 },
+        { fill: "#334155", dx: -8, dy: -34 },
+        { fill: "#334155", dx: -22, dy: -50 }
+      ];
+      barsNewestFirst.slice(0, 5).forEach((bar, index) => {
+        const layout = labelLayout[index];
+        chart.createOverlay({
+          name: "paTextLabel",
+          points: [{ timestamp: bar.timestamp, value: bar.high }],
+          extendData: { label: `K${index + 1}`, ...layout }
+        });
+      });
+
+      [
+        { value: 51.16, text: "压力 51.16", color: "#d97706" },
+        { value: 49.50, text: "压力 49.50", color: "#d97706" },
+        { value: 45.51, text: "支撑 45.51", color: "#2563eb" },
+        { value: 44.85, text: "支撑 44.85", color: "#2563eb" }
+      ].forEach((level) => {
+        chart.createOverlay({
+          name: "paLevel",
+          points: [{ timestamp: bars[0].timestamp, value: level.value }],
+          extendData: level
+        });
+      });
+    }
+
+    window.addEventListener("load", mountChart);
+  </script>
+</body>
+</html>

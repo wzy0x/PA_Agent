@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>拱东医疗 klinecharts K1-K5</title>
+  <style>
+    :root {
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      background: #f6f7f9;
+      color: #1f2933;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .meta {
+      margin-top: 6px;
+      color: #52606d;
+      font-size: 13px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      color: #52606d;
+      font-size: 13px;
+    }
+
+    .pill {
+      border: 1px solid #d9e2ec;
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: #fff;
+      white-space: nowrap;
+    }
+
+    #chart {
+      width: 100%;
+      height: 620px;
+      border: 1px solid #d9e2ec;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .note {
+      margin: 12px 0 0;
+      color: #52606d;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .error {
+      display: none;
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border: 1px solid #f5c2c7;
+      background: #fff1f2;
+      color: #9f1239;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>拱东医疗 605369 日线</h1>
+        <div class="meta">klinecharts 渲染；东方财富公共行情快照；K1 = 最新已收盘K线</div>
+      </div>
+      <div class="legend">
+        <span class="pill">K1 2026-07-01 收 18.61</span>
+        <span class="pill">压力 19.06 / 19.39</span>
+        <span class="pill">支撑 17.12 / 15.93</span>
+      </div>
+    </header>
+
+    <div id="load-error" class="error"></div>
+    <section id="chart" aria-label="拱东医疗K线图"></section>
+    <p class="note">
+      图上最右侧闭合K线标为 K1，往左依次是 K2、K3、K4、K5。AI 分析只应使用这些已收盘K线；
+      如果之后接入实时分时或未收盘日K，可以显示为 seq=0，但不能参与 K1/K2 编号。
+    </p>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/klinecharts@10.0.0-alpha5/dist/umd/klinecharts.min.js"></script>
+  <script>
+    const barsNewestFirst = [
+      {
+            "time": "2026-07-01",
+            "timestamp": 1782835200000,
+            "open": 17.53,
+            "high": 19.06,
+            "low": 17.12,
+            "close": 18.61,
+            "volume": 46994
+      },
+      {
+            "time": "2026-06-30",
+            "timestamp": 1782748800000,
+            "open": 18.19,
+            "high": 18.31,
+            "low": 17.19,
+            "close": 17.54,
+            "volume": 49697
+      },
+      {
+            "time": "2026-06-29",
+            "timestamp": 1782662400000,
+            "open": 17.78,
+            "high": 18.9,
+            "low": 17.78,
+            "close": 18.32,
+            "volume": 53261
+      },
+      {
+            "time": "2026-06-26",
+            "timestamp": 1782403200000,
+            "open": 18.89,
+            "high": 19.38,
+            "low": 17.15,
+            "close": 17.44,
+            "volume": 76199
+      },
+      {
+            "time": "2026-06-25",
+            "timestamp": 1782316800000,
+            "open": 17.72,
+            "high": 19.39,
+            "low": 17.41,
+            "close": 19.06,
+            "volume": 95404
+      },
+      {
+            "time": "2026-06-24",
+            "timestamp": 1782230400000,
+            "open": 17.84,
+            "high": 18.52,
+            "low": 15.93,
+            "close": 18.2,
+            "volume": 108716
+      },
+      {
+            "time": "2026-06-23",
+            "timestamp": 1782144000000,
+            "open": 15.4,
+            "high": 16.94,
+            "low": 15.18,
+            "close": 16.94,
+            "volume": 30392
+      },
+      {
+            "time": "2026-06-22",
+            "timestamp": 1782057600000,
+            "open": 15.66,
+            "high": 15.68,
+            "low": 14.75,
+            "close": 15.4,
+            "volume": 24643
+      },
+      {
+            "time": "2026-06-18",
+            "timestamp": 1781712000000,
+            "open": 15.48,
+            "high": 15.84,
+            "low": 15.33,
+            "close": 15.68,
+            "volume": 14644
+      },
+      {
+            "time": "2026-06-17",
+            "timestamp": 1781625600000,
+            "open": 16,
+            "high": 16.17,
+            "low": 15.41,
+            "close": 15.53,
+            "volume": 21714
+      },
+      {
+            "time": "2026-06-16",
+            "timestamp": 1781539200000,
+            "open": 16.46,
+            "high": 16.53,
+            "low": 15.82,
+            "close": 16.05,
+            "volume": 20499
+      },
+      {
+            "time": "2026-06-15",
+            "timestamp": 1781452800000,
+            "open": 16.19,
+            "high": 16.88,
+            "low": 16.19,
+            "close": 16.53,
+            "volume": 21112
+      },
+      {
+            "time": "2026-06-12",
+            "timestamp": 1781193600000,
+            "open": 16.12,
+            "high": 16.3,
+            "low": 15.86,
+            "close": 16.19,
+            "volume": 12748
+      },
+      {
+            "time": "2026-06-11",
+            "timestamp": 1781107200000,
+            "open": 16.1,
+            "high": 16.2,
+            "low": 15.86,
+            "close": 16.13,
+            "volume": 10239
+      },
+      {
+            "time": "2026-06-10",
+            "timestamp": 1781020800000,
+            "open": 16.14,
+            "high": 16.3,
+            "low": 15.8,
+            "close": 16.11,
+            "volume": 17538
+      },
+      {
+            "time": "2026-06-09",
+            "timestamp": 1780934400000,
+            "open": 16.69,
+            "high": 16.78,
+            "low": 16.18,
+            "close": 16.3,
+            "volume": 12525
+      },
+      {
+            "time": "2026-06-08",
+            "timestamp": 1780848000000,
+            "open": 16.81,
+            "high": 17.35,
+            "low": 16.31,
+            "close": 16.5,
+            "volume": 18919
+      },
+      {
+            "time": "2026-06-05",
+            "timestamp": 1780588800000,
+            "open": 17.15,
+            "high": 17.22,
+            "low": 16.63,
+            "close": 17.21,
+            "volume": 17659
+      },
+      {
+            "time": "2026-06-04",
+            "timestamp": 1780502400000,
+            "open": 17.51,
+            "high": 17.67,
+            "low": 16.78,
+            "close": 16.85,
+            "volume": 15053
+      },
+      {
+            "time": "2026-06-03",
+            "timestamp": 1780416000000,
+            "open": 18.06,
+            "high": 18.06,
+            "low": 17.41,
+            "close": 17.51,
+            "volume": 16428
+      },
+      {
+            "time": "2026-06-02",
+            "timestamp": 1780329600000,
+            "open": 18.4,
+            "high": 18.7,
+            "low": 17.94,
+            "close": 18.01,
+            "volume": 15976
+      },
+      {
+            "time": "2026-06-01",
+            "timestamp": 1780243200000,
+            "open": 18.05,
+            "high": 18.59,
+            "low": 17.62,
+            "close": 18.41,
+            "volume": 16094
+      },
+      {
+            "time": "2026-05-29",
+            "timestamp": 1779984000000,
+            "open": 18.08,
+            "high": 18.53,
+            "low": 18.03,
+            "close": 18.18,
+            "volume": 16029
+      },
+      {
+            "time": "2026-05-28",
+            "timestamp": 1779897600000,
+            "open": 18.33,
+            "high": 18.33,
+            "low": 17.61,
+            "close": 18.21,
+            "volume": 19705
+      },
+      {
+            "time": "2026-05-27",
+            "timestamp": 1779811200000,
+            "open": 18.85,
+            "high": 19.05,
+            "low": 17.54,
+            "close": 18.2,
+            "volume": 45080
+      },
+      {
+            "time": "2026-05-26",
+            "timestamp": 1779724800000,
+            "open": 19.15,
+            "high": 19.29,
+            "low": 18.69,
+            "close": 18.84,
+            "volume": 22321
+      },
+      {
+            "time": "2026-05-25",
+            "timestamp": 1779638400000,
+            "open": 19.74,
+            "high": 19.76,
+            "low": 19.05,
+            "close": 19.2,
+            "volume": 20077
+      },
+      {
+            "time": "2026-05-22",
+            "timestamp": 1779379200000,
+            "open": 19.47,
+            "high": 19.83,
+            "low": 19.37,
+            "close": 19.72,
+            "volume": 19550
+      },
+      {
+            "time": "2026-05-21",
+            "timestamp": 1779292800000,
+            "open": 20.14,
+            "high": 20.21,
+            "low": 19.42,
+            "close": 19.45,
+            "volume": 21488
+      },
+      {
+            "time": "2026-05-20",
+            "timestamp": 1779206400000,
+            "open": 20.09,
+            "high": 20.34,
+            "low": 19.82,
+            "close": 20.05,
+            "volume": 26016
+      },
+      {
+            "time": "2026-05-19",
+            "timestamp": 1779120000000,
+            "open": 19.98,
+            "high": 20.42,
+            "low": 19.86,
+            "close": 20.13,
+            "volume": 26464
+      },
+      {
+            "time": "2026-05-18",
+            "timestamp": 1779033600000,
+            "open": 20.68,
+            "high": 20.85,
+            "low": 19.66,
+            "close": 19.98,
+            "volume": 44324
+      },
+      {
+            "time": "2026-05-15",
+            "timestamp": 1778774400000,
+            "open": 21,
+            "high": 21.43,
+            "low": 20.75,
+            "close": 20.95,
+            "volume": 28478
+      },
+      {
+            "time": "2026-05-14",
+            "timestamp": 1778688000000,
+            "open": 20.85,
+            "high": 21.43,
+            "low": 20.65,
+            "close": 20.91,
+            "volume": 36136
+      },
+      {
+            "time": "2026-05-13",
+            "timestamp": 1778601600000,
+            "open": 20.8,
+            "high": 21.73,
+            "low": 20.74,
+            "close": 20.76,
+            "volume": 41027
+      },
+      {
+            "time": "2026-05-12",
+            "timestamp": 1778515200000,
+            "open": 20.76,
+            "high": 21.34,
+            "low": 20.3,
+            "close": 20.5,
+            "volume": 61335
+      },
+      {
+            "time": "2026-05-11",
+            "timestamp": 1778428800000,
+            "open": 22.35,
+            "high": 22.35,
+            "low": 20.45,
+            "close": 20.84,
+            "volume": 93703
+      },
+      {
+            "time": "2026-05-08",
+            "timestamp": 1778169600000,
+            "open": 21.21,
+            "high": 22.53,
+            "low": 20.97,
+            "close": 22.35,
+            "volume": 70407
+      },
+      {
+            "time": "2026-05-07",
+            "timestamp": 1778083200000,
+            "open": 19.95,
+            "high": 21.62,
+            "low": 19.65,
+            "close": 21.18,
+            "volume": 78888
+      },
+      {
+            "time": "2026-05-06",
+            "timestamp": 1777996800000,
+            "open": 19.65,
+            "high": 20.5,
+            "low": 19.65,
+            "close": 20.11,
+            "volume": 47591
+      }
+];
+
+    function showError(message) {
+      const error = document.getElementById("load-error");
+      error.textContent = message;
+      error.style.display = "block";
+    }
+
+    function registerOverlays(api) {
+      api.registerOverlay({
+        name: "paTextLabel",
+        totalStep: 1,
+        needDefaultPointFigure: false,
+        needDefaultXAxisFigure: false,
+        needDefaultYAxisFigure: false,
+        createPointFigures: ({ coordinates, overlay }) => {
+          const point = coordinates[0];
+          const label = overlay.extendData?.label ?? "";
+          const fill = overlay.extendData?.fill ?? "#1d4ed8";
+          const dx = overlay.extendData?.dx ?? 0;
+          const dy = overlay.extendData?.dy ?? 0;
+          const labelX = point.x + dx;
+          const labelY = point.y - 24 + dy;
+          return [
+            {
+              type: "rect",
+              attrs: { x: labelX - 18, y: labelY - 11, width: 36, height: 22 },
+              styles: { style: "fill", color: fill, borderRadius: 5 }
+            },
+            {
+              type: "text",
+              attrs: { x: labelX, y: labelY, text: label, align: "center", baseline: "middle" },
+              styles: { color: "#ffffff", size: 12, weight: "bold" }
+            },
+            {
+              type: "line",
+              attrs: { coordinates: [{ x: labelX, y: labelY + 11 }, { x: point.x, y: point.y - 1 }] },
+              styles: { color: fill, size: 1 }
+            }
+          ];
+        }
+      });
+
+      api.registerOverlay({
+        name: "paLevel",
+        totalStep: 1,
+        needDefaultPointFigure: false,
+        needDefaultXAxisFigure: false,
+        needDefaultYAxisFigure: false,
+        createPointFigures: ({ coordinates, bounding, overlay }) => {
+          const point = coordinates[0];
+          const text = overlay.extendData?.text ?? "";
+          const color = overlay.extendData?.color ?? "#2563eb";
+          return [
+            {
+              type: "line",
+              attrs: { coordinates: [{ x: 0, y: point.y }, { x: bounding.width, y: point.y }] },
+              styles: { color, size: 1, dashedValue: [4, 4] }
+            },
+            {
+              type: "text",
+              attrs: { x: bounding.width - 8, y: point.y - 7, text, align: "right", baseline: "bottom" },
+              styles: { color, size: 12, weight: "bold" }
+            }
+          ];
+        }
+      });
+    }
+
+    function mountChart() {
+      if (!window.klinecharts) {
+        showError("klinecharts 未加载。请检查网络，或后续改为 bun add klinecharts 后本地打包。");
+        return;
+      }
+
+      const chart = window.klinecharts.init("chart", {
+        styles: {
+          candle: {
+            bar: {
+              upColor: "#d64545",
+              downColor: "#168a5a",
+              noChangeColor: "#6b7280",
+              upBorderColor: "#d64545",
+              downBorderColor: "#168a5a",
+              noChangeBorderColor: "#6b7280",
+              upWickColor: "#d64545",
+              downWickColor: "#168a5a",
+              noChangeWickColor: "#6b7280"
+            }
+          },
+          grid: {
+            horizontal: { color: "#edf2f7" },
+            vertical: { color: "#edf2f7" }
+          }
+        }
+      });
+
+      registerOverlays(window.klinecharts);
+
+      const bars = [...barsNewestFirst].reverse();
+      chart.applyNewData(bars);
+
+      chart.setOffsetRightDistance(40);
+      chart.createIndicator("VOL", false);
+      chart.createIndicator("MA", false, { id: "candle_pane" });
+
+      const labelLayout = [
+        { fill: "#1d4ed8", dx: 22, dy: 38 },
+        { fill: "#334155", dx: 18, dy: 10 },
+        { fill: "#334155", dx: 8, dy: -18 },
+        { fill: "#334155", dx: -8, dy: -34 },
+        { fill: "#334155", dx: -22, dy: -50 }
+      ];
+      barsNewestFirst.slice(0, 5).forEach((bar, index) => {
+        const layout = labelLayout[index];
+        chart.createOverlay({
+          name: "paTextLabel",
+          points: [{ timestamp: bar.timestamp, value: bar.high }],
+          extendData: { label: `K${index + 1}`, ...layout }
+        });
+      });
+
+      [
+        { value: 19.39, text: "压力 19.39", color: "#d97706" },
+        { value: 19.06, text: "压力 19.06", color: "#d97706" },
+        { value: 17.12, text: "支撑 17.12", color: "#2563eb" },
+        { value: 15.93, text: "支撑 15.93", color: "#2563eb" }
+      ].forEach((level) => {
+        chart.createOverlay({
+          name: "paLevel",
+          points: [{ timestamp: bars[0].timestamp, value: level.value }],
+          extendData: level
+        });
+      });
+    }
+
+    window.addEventListener("load", mountChart);
+  </script>
+</body>
+</html>
